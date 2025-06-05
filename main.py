@@ -5,6 +5,7 @@ from selenium.webdriver.common.keys import Keys
 import time
 import pandas as pd
 import re
+import sqlite3
 
 # ==== funções auxiliares ====
 
@@ -21,6 +22,9 @@ def rolar_800px(driver):
 
 def extrair_dados(driver, limite=6):
     produtos = []
+
+    rolar_400px(driver)
+
     blocos_a =  driver.find_elements(By.CSS_SELECTOR, ".ui-search-result__wrapper")[:3]
 
     for bloco in blocos_a:
@@ -58,6 +62,11 @@ def extrair_dados(driver, limite=6):
 
 # ==== CÓDIGO PRINCIPAL ====
 
+
+
+# = PARTE SELENIUM =
+
+
 #iniciando o navegador
 
 driver = webdriver.Chrome()
@@ -73,17 +82,16 @@ barra_busca = driver.find_element('id', 'cb1-edit')
 barra_busca.send_keys('Notebook')
 barra_busca.send_keys(Keys.ENTER)
 
-#Scrollando até os 3 primeros resultados  
-
-rolar_400px(driver)
-
-#Coletando informações dos 3 primeiros 3/6
+#Coletando informações dos produtos
 
 produtos = extrair_dados(driver)
 print(produtos)
 
 
 time.sleep(3)
+
+# = PARTE PANDAS =
+
 
 #Criando um DataFrame com os dados coletados
 
@@ -101,5 +109,43 @@ produtos_ordenados = df.sort_values('preco_limpo')
 print(produtos_ordenados)
 
 #Eportando o Dataframe com csv
+
 df = produtos_ordenados
 df.to_csv('produtos.csv', index=False)
+
+# = PARTE SQLite =
+
+
+#Criando o banco de dados e o cursor SQLite
+
+conexao = sqlite3.connect("produtos.db")
+cursor = conexao.cursor()
+
+#Criando a tabela 
+
+cursor.execute("""
+               CREATE TABLE IF NOT EXISTS produtos (nome, preco, preco_limpo)
+""")
+
+#Limpando a tabela (caso existam dados)
+
+cursor.execute("DELETE FROM produtos")
+conexao.commit()
+
+#Inserir dados na tabela
+
+for _, row in df.iterrows():
+    cursor.execute("""
+                INSERT INTO produtos (nome, preco, preco_limpo)
+                VALUES (?, ?, ?)               
+    """, (row['nome'], row['preco'], row['preco_limpo']))
+    conexao.commit()
+
+#Consultando o banco de dados
+
+cursor.execute("SELECT * FROM produtos")
+
+resultado = cursor.fetchall()
+
+for linha in resultado:
+    print(linha)
