@@ -124,7 +124,11 @@ cursor = conexao.cursor()
 #Criando a tabela 
 
 cursor.execute("""
-               CREATE TABLE IF NOT EXISTS produtos (nome, preco, preco_limpo)
+               CREATE TABLE IF NOT EXISTS produtos (
+                nome UNIQUE,
+                preco,
+                preco_limpo
+        )
 """)
 
 #Limpando a tabela (caso existam dados)
@@ -136,7 +140,7 @@ conexao.commit()
 
 for _, row in df.iterrows():
     cursor.execute("""
-                INSERT INTO produtos (nome, preco, preco_limpo)
+                INSERT OR IGNORE INTO produtos (nome, preco, preco_limpo)
                 VALUES (?, ?, ?)               
     """, (row['nome'], row['preco'], row['preco_limpo']))
     conexao.commit()
