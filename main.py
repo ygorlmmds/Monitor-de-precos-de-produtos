@@ -3,6 +3,8 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 import time
+import pandas as pd
+import re
 
 # ==== funções auxiliares ====
 
@@ -82,3 +84,22 @@ print(produtos)
 
 
 time.sleep(3)
+
+#Criando um DataFrame com os dados coletados
+
+df = pd.DataFrame(produtos)
+
+#extraindo o valor, sem os sinais
+
+df['preco_limpo'] = df['preco'].str.replace(r'[R$\.\n\\]', '', regex=True)
+
+print(df)
+
+#ordenando do menor ao maior
+
+produtos_ordenados = df.sort_values('preco_limpo')
+print(produtos_ordenados)
+
+#Eportando o Dataframe com csv
+df = produtos_ordenados
+df.to_csv('produtos.csv', index=False)
